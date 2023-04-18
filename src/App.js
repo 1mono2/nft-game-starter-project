@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import twitterLogo from './assets/twitter-logo.svg';
 import './App.css';
+import SelectCharacter from './Components/SelectCharacter';
+import { CONTRACT_ADDRESS, SEPOLIA_NETWORK, transformCharacterData } from './constant';
+import { ethers } from 'ethers';
+import myEpicGame from './Utils/MyEpicGame.json';
 
 // Constants
 const TWITTER_HANDLE = '1MoNo2Prod';
@@ -8,13 +12,27 @@ const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 
 const App = () => {
   // ユーザーのウォレットアドレスを格納するために使用する状態変数を定義します。
-  const [currentAccount, setCurrentAccount] = React.useState(null);
+  const [currentAccount, setCurrentAccount] = useState(null);
+  const [characterNFT, setCharacterNFT] = useState(null);
 
+  // ユーザーがSepolia Network に接続されているか確認します。
+  // '11155111' は Sepolia のネットワークコードです。
+  const checkNetwork = async () => {
+    try {
+      if (window.ethereum.networkVersion !== SEPOLIA_NETWORK) {
+        alert('このゲームはSepolia Networkに接続されている必要があります。');
+      } else {
+        console.log('Sepolia Networkに接続されています。');
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   // ユーザーがMetaMaskを持っているか確認します。
-  const checkIfWalletIsConnected = () => {
+  const checkIfWalletIsConnected = async () => {
     try {
-      const { ethereum } = window.ethereum;
+      const { ethereum } = window;
       if (!ethereum) {
         console.log('MetaMaskが見つかりませんでした。');
         return;
@@ -38,62 +56,104 @@ const App = () => {
     }
   };
 
+  // レンダリングメソッド
+  const renderContent = () => {
+    // シナリオ1.
+    // ユーザーがWEBアプリにログインしていない場合、WEBアプリ上に、"Connect Wallet to Get Started" ボタンを表示します。
+    if (!currentAccount) {
+      return (
+        <div className="connect-wallet-container">
+          <img src="https://i.imgur.com/TXBQ4cC.png" alt="LUFFY" />
+          <button
+            className="cta-button connect-wallet-button"
+            onClick={connectWalletAction}
+          >
+            Connect Wallet to Get Started
+          </button>
+        </div>
+      );
+      // シナリオ2.
+      // ユーザーはWEBアプリにログインしており、かつ NFT キャラクターを持っていない場合、WEBアプリ上に、を表示します。
+    } else if (!characterNFT && currentAccount) {
+      return (<SelectCharacter setCharacterNFT={setCharacterNFT} />);
+    }
+  };
+
   // ユーザーがウォレットに接続するための関数を定義します。
-  const connectWallet = async () => {
+  const connectWalletAction = async () => {
     try {
       const { ethereum } = window;
       if (!ethereum) {
         alert('MetaMaskが見つかりませんでした。');
         return;
       }
-      else {
-        // ユーザーにウォレットに接続するように求めます。
-        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-        console.log('Connected', accounts[0]);
-        // ユーザーのウォレットアドレスを状態変数に格納します。
-        setCurrentAccount(accounts[0]);
+      // ユーザーがウォレットを持っているか確認します。
+      checkIfWalletIsConnected();
+
+
+      // ユーザーにウォレットに接続するように求めます。
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      console.log('Connected', accounts[0]);
+      // ユーザーのウォレットアドレスを状態変数に格納します。
+      setCurrentAccount(accounts[0]);
+
+      // ユーザーがSepolia Network に接続されているか確認します。
+      checkNetwork();
+
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  // ページがロードされたときに useEffect()内の関数が呼び出されます。
+  useEffect(() => {
+    // スマートコントラクトを呼び出す関数です。
+    const fetchNFTMetadata = async () => {
+      console.log("Checking for Character NFT on address:", currentAccount);
+      // ユーザーのウォレットアドレスを使用して、スマートコントラクトを呼び出します。
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const gameContract = new ethers.Contract(CONTRACT_ADDRESS, myEpicGame.abi, signer);
+
+      const txn = await gameContract.checkIfUserHasNFT();
+      // 名前が空文字かどうかで判断
+      if (txn.name) {
+        console.log("User has character NFT!");
+        setCharacterNFT(transformCharacterData(txn));
+      } else {
+        console.log("No character NFT found");
       }
+    }
 
-      // ページがロードされたときに useEffect()内の関数が呼び出されます。
-      React.useEffect(() => {
-        checkIfWalletIsConnected();
-      }, []);
+    // 接続されたウォレットがある場合のみ、下記を実行します。
+    if (currentAccount) {
+      console.log("CurrentAccount:", currentAccount);
+      fetchNFTMetadata();
+    }
+  }, [currentAccount]);
 
-      return (
-        <div className="App">
-          <div className="container">
-            <div className="header-container">
-              <p className="header gradient-text">⚡️ METAVERSE GAME ⚡️</p>
-              <p className="sub-text">プレイヤーと協力してボスを倒そう✨</p>
-              <div className="connect-wallet-container">
-                <img
-                  src="https://i.imgur.com/TXBQ4cC.png"
-                  alt="LUFFY"
-                />
-                {/*
-             * ウォレットコネクトを起動するために使用するボタンを設定しています。
-             * メソッドを呼び出すために onClick イベントを追加することを忘れないでください。
-             */}
-                <button
-                  className="cta-button connect-wallet-button"
-                  onClick={connectWalletAction}
-                >
-                  Connect Wallet To Get Started
-                </button>
-              </div>
-            </div>
-            <div className="footer-container">
-              <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
-              <a
-                className="footer-text"
-                href={TWITTER_LINK}
-                target="_blank"
-                rel="noreferrer"
-              >{`built with @${TWITTER_HANDLE}`}</a>
-            </div>
+  return (
+    <div className="App">
+      <div className="container">
+        <div className="header-container">
+          <p className="header gradient-text">⚡️ METAVERSE GAME ⚡️</p>
+          <p className="sub-text">プレイヤーと協力してボスを倒そう✨</p>
+          <div className="connect-wallet-container">
+            {/* renderContent メソッドを呼び出します。*/}
+            {renderContent()}
           </div>
         </div>
-      );
-    };
-
-    export default App;
+        <div className="footer-container">
+          <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
+          <a
+            className="footer-text"
+            href={TWITTER_LINK}
+            target="_blank"
+            rel="noreferrer"
+          >{`built with @${TWITTER_HANDLE}`}</a>
+        </div>
+      </div>
+    </div>
+  );
+};
+export default App;
