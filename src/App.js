@@ -5,6 +5,7 @@ import SelectCharacter from './Components/SelectCharacter';
 import { CONTRACT_ADDRESS, SEPOLIA_NETWORK, transformCharacterData } from './constant';
 import { ethers } from 'ethers';
 import myEpicGame from './Utils/MyEpicGame.json';
+import Arena from './Components/Arena';
 
 // Constants
 const TWITTER_HANDLE = '1MoNo2Prod';
@@ -40,7 +41,7 @@ const App = () => {
         console.log("We have the ethereum object", ethereum);
         // accountsにWEBサイトを訪れたユーザーのウォレットアカウントを格納します。
         // （複数持っている場合も加味、よって account's' と変数を定義している）
-        const accounts = ethereum.request({ method: 'eth_accounts' });
+        const accounts = await ethereum.request({ method: 'eth_accounts' });
         if (accounts.length !== 0) {
           const account = accounts[0];
           console.log("Found an authorized account:", account);
@@ -76,6 +77,11 @@ const App = () => {
       // ユーザーはWEBアプリにログインしており、かつ NFT キャラクターを持っていない場合、WEBアプリ上に、を表示します。
     } else if (!characterNFT && currentAccount) {
       return (<SelectCharacter setCharacterNFT={setCharacterNFT} />);
+      // シナリオ3.
+      // ユーザーはWEBアプリにログインしており、かつ NFT キャラクターを持っている場合、
+      // Arena でボスと戦います。
+    } else if (characterNFT && currentAccount) {
+      return (<Arena characterNFT={characterNFT} setCharacterNFT={setCharacterNFT} />);
     }
   };
 
@@ -118,7 +124,7 @@ const App = () => {
       const txn = await gameContract.checkIfUserHasNFT();
       // 名前が空文字かどうかで判断
       if (txn.name) {
-        console.log("User has character NFT!");
+        console.log("User has character NFT!" + txn);
         setCharacterNFT(transformCharacterData(txn));
       } else {
         console.log("No character NFT found");

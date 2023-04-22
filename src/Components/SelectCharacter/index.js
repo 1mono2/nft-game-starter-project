@@ -30,7 +30,7 @@ const SelectCharacter = ({ setCharacterNFT }) => {
             const characterNFT = await gameContract.checkIfUserHasNFT();
             console.log("characterNFT:", characterNFT);
             setCharacterNFT(transformCharacterData(characterNFT));
-
+            alert(`NFT キャラクターが Mint されました -- リンクはこちらです: https://testnets.opensea.io/assets/${gameContract.CONTRACT_ADDRESS}/${tokenId.toNumber()}`);
         }
     }
 
@@ -81,8 +81,8 @@ const SelectCharacter = ({ setCharacterNFT }) => {
     }, [gameContract]);
 
     // NFT キャラクターをフロントエンドにレンダリングするメソッドです。
-    const renderCharacters = () => {
-        characters.map((character, index) => {
+    const renderCharacters = () =>
+        characters.map((character, index) => (
             <div className="character-item" key={character.name}>
                 <div className="name-container">
                     <p>{character.name}</p>
@@ -91,16 +91,15 @@ const SelectCharacter = ({ setCharacterNFT }) => {
                 <button
                     type="button"
                     className="character-mint-button"
-                    onClick={mintCharacterNFTAction(index)}
+                    onClick={() => mintCharacterNFTAction(index)}
                 >{`Mint ${character.name}`}</button>
             </div>
-        })
-    }
+        ));
 
     return (
         <div className="select-character-container">
             <h2>⏬ 一緒に戦う NFT キャラクターを選択 ⏬</h2>
-            {/* キャラクターNFTがフロントエンド上で読み込めている際に、下記を表示します */}
+            {/* キャラクターNFTがフロントエンド上で読み込めている際に、下記を表示します*/}
             {characters.length > 0 && (
                 <div className="character-grid">{renderCharacters()}</div>
             )}
