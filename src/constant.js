@@ -1,4 +1,4 @@
-const CONTRACT_ADDRESS = "0x517D3B729aCC600d6e495c29Ab2CB459c1f855Ac";
+const CONTRACT_ADDRESS = "0xa805343EB8143F14D3B1014F5D772e881B015c20";
 const SEPOLIA_NETWORK = "11155111";
 const transformCharacterData = (characterData) => {
     return {

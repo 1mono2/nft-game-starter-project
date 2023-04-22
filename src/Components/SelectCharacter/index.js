@@ -3,22 +3,27 @@ import "./SelectCharacter.css";
 import { ethers } from "ethers";
 import { CONTRACT_ADDRESS, transformCharacterData } from "../../constant";
 import myEpicGame from "../../Utils/MyEpicGame.json";
+import LoadingIndicator from "../../Components/LoadingIndicator";
 
 const SelectCharacter = ({ setCharacterNFT }) => {
     const [characters, setCharacters] = useState([]);
     const [gameContract, setGameContract] = useState(null);
+    const [mintingCharacter, setMintingCharacter] = useState(false);
 
     // NFT キャラクターを Mint します。
     const mintCharacterNFTAction = async (characterId) => {
         try {
             if (gameContract) {
+                setMintingCharacter(true);
                 console.log("Minting character in progress...");
                 const mintTxn = await gameContract.mintCharacterNFT(characterId);
                 await mintTxn.wait();
                 console.log("Minting character done!");
+                setMintingCharacter(false);
             }
         } catch (error) {
             console.log("Minting character error:", error);
+            setMintingCharacter(false);
         }
     }
 
@@ -87,7 +92,7 @@ const SelectCharacter = ({ setCharacterNFT }) => {
                 <div className="name-container">
                     <p>{character.name}</p>
                 </div>
-                <img src={character.imageURI} alt={character.name} />
+                <img src={`https://cloudflare-ipfs.com/ipfs/${character.imageURI}`} alt={character.name} />
                 <button
                     type="button"
                     className="character-mint-button"
@@ -102,6 +107,16 @@ const SelectCharacter = ({ setCharacterNFT }) => {
             {/* キャラクターNFTがフロントエンド上で読み込めている際に、下記を表示します*/}
             {characters.length > 0 && (
                 <div className="character-grid">{renderCharacters()}</div>
+            )}
+            {/* キャラクターNFTがフロントエンド上で読み込めていない際に、下記を表示します*/}
+            {mintingCharacter && (
+                <div className="loading">
+                    <div className="indicator">
+                        <LoadingIndicator />
+                        <p>Minting In Progress</p>
+                    </div>
+                </div>
+
             )}
         </div>
     );

@@ -6,6 +6,7 @@ import { CONTRACT_ADDRESS, SEPOLIA_NETWORK, transformCharacterData } from './con
 import { ethers } from 'ethers';
 import myEpicGame from './Utils/MyEpicGame.json';
 import Arena from './Components/Arena';
+import LoadingIndicator from './Components/LoadingIndicator';
 
 // Constants
 const TWITTER_HANDLE = '1MoNo2Prod';
@@ -15,6 +16,7 @@ const App = () => {
   // ユーザーのウォレットアドレスを格納するために使用する状態変数を定義します。
   const [currentAccount, setCurrentAccount] = useState(null);
   const [characterNFT, setCharacterNFT] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // ユーザーがSepolia Network に接続されているか確認します。
   // '11155111' は Sepolia のネットワークコードです。
@@ -36,6 +38,8 @@ const App = () => {
       const { ethereum } = window;
       if (!ethereum) {
         console.log('MetaMaskが見つかりませんでした。');
+        // 次の行で return を使用するため、ここで isLoading を設定します。
+        setIsLoading(false);
         return;
       } else {
         console.log("We have the ethereum object", ethereum);
@@ -50,6 +54,7 @@ const App = () => {
         } else {
           console.log("No authorized account found");
         }
+        setIsLoading(false);
       }
 
     } catch (error) {
@@ -59,6 +64,11 @@ const App = () => {
 
   // レンダリングメソッド
   const renderContent = () => {
+    // アプリがロード中の場合は、LoadingIndicator をレンダリングします。
+    if (isLoading) {
+      return (<LoadingIndicator />);
+    }
+
     // シナリオ1.
     // ユーザーがWEBアプリにログインしていない場合、WEBアプリ上に、"Connect Wallet to Get Started" ボタンを表示します。
     if (!currentAccount) {
@@ -129,6 +139,8 @@ const App = () => {
       } else {
         console.log("No character NFT found");
       }
+      // ユーザーが保持している NFT の確認が完了したら、ロード状態を false に設定します。
+      setIsLoading(false);
     }
 
     // 接続されたウォレットがある場合のみ、下記を実行します。
@@ -137,6 +149,12 @@ const App = () => {
       fetchNFTMetadata();
     }
   }, [currentAccount]);
+
+  useEffect(() => {
+    // ページがロードされたら、即座にロード状態を設定するようにします。
+    setIsLoading(true);
+    checkIfWalletIsConnected();
+  }, []);
 
   return (
     <div className="App">

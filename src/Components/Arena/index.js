@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { CONTRACT_ADDRESS, transformCharacterData } from "../../constant";
 import myEpicGame from "../../Utils/MyEpicGame.json";
 import "./Arena.css";
+import LoadingIndicator from "../LoadingIndicator";
 
 // フロントエンドにNFTキャラクターを表示するため、characterNFTのメタデータを渡します。
 const Arena = ({ characterNFT, setCharacterNFT }) => {
@@ -12,6 +13,8 @@ const Arena = ({ characterNFT, setCharacterNFT }) => {
     const [boss, setBoss] = useState(null);
     // 攻撃の状態を保存する変数を初期化します。
     const [attackState, setAttackState] = useState("");
+    // 攻撃ダメージの表示形式を保存する変数を初期化します。
+    const [showToast, setShowToast] = useState(false);
 
     // ボスを攻撃する関数を設定します。
     const runAttackAction = async () => {
@@ -30,6 +33,12 @@ const Arena = ({ characterNFT, setCharacterNFT }) => {
 
                 // attackState の状態を hit に設定します。
                 setAttackState("hit");
+
+                // 攻撃ダメージの表示を true に設定し（表示）、5秒後に false に設定する（非表示）
+                setShowToast(true);
+                setTimeout(() => {
+                    setShowToast(false);
+                }, 5000);
             }
         } catch (error) {
             console.error("Error attacking boss:", error);
@@ -99,6 +108,14 @@ const Arena = ({ characterNFT, setCharacterNFT }) => {
 
     return (
         <div className="arena-container">
+            {/* 攻撃ダメージの通知を追加します */}
+            {boss && characterNFT && (
+                <div id="toast" className={showToast ? "show" : ""}>
+                    <div id="desc">
+                        {`💥 ${boss.name} was hit for ${characterNFT.attackDamage}!`}
+                    </div>
+                </div>
+            )}
             {/* ボスをレンダリングします */}
             {boss && (
                 <div className="boss-container">
@@ -115,9 +132,16 @@ const Arena = ({ characterNFT, setCharacterNFT }) => {
                     </div>
                     <div className="attack-container">
                         <button className="cta-button" onClick={runAttackAction}>
-                            {`💥Attack (⚔️${boss.attackDamage})`}
+                            {`💥Attack (⚔️${boss.name})`}
                         </button>
                     </div>
+                    {/* Attack ボタンの下にローディングマークを追加します*/}
+                    {attackState === "attacking" && (
+                        <div className="loading-indicator">
+                            <LoadingIndicator />
+                            <p> Attacking {boss.name}...</p>
+                        </div>
+                    )}
                 </div>
             )}
             {/* NFT キャラクター */}
@@ -129,7 +153,7 @@ const Arena = ({ characterNFT, setCharacterNFT }) => {
                             <div className="image-content">
                                 <h2>{characterNFT.name}</h2>
                                 <img
-                                    src={characterNFT.imageURI}
+                                    src={`https://cloudflare-ipfs.com/ipfs/${characterNFT.imageURI}`}
                                     alt={`Character ${characterNFT.name}`}
                                 />
                                 <div className="health-bar">
@@ -142,6 +166,11 @@ const Arena = ({ characterNFT, setCharacterNFT }) => {
                             </div>
                         </div>
                     </div>
+                    {/* <div className="active-players">
+          <h2>Active Players</h2>
+          <div className="players-list">{renderActivePlayersList()}</div>
+        </div> */}
+
                 </div>
             )}
         </div>
